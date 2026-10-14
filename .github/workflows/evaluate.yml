@@ -1,0 +1,26 @@
+name: Prompt evaluation
+
+on:
+  pull_request:
+    paths:
+      - 'prompts/**'
+      - 'data/golden.json'
+      - 'src/prompt_regression/**'
+      - '.github/workflows/evaluate.yml'
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run deterministic evaluation
+        run: PYTHONPATH=src python -m prompt_regression --dataset data/golden.json --prompt-version v1 --save-baseline
+      - name: Upload HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prompt-evaluation-report
+          path: reports/*.html
