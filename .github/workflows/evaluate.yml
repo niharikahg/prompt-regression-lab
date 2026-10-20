@@ -1,11 +1,11 @@
-name: Prompt evaluation
+name: Golden dataset validation
 
 on:
   pull_request:
     paths:
-      - 'prompts/**'
-      - 'data/golden.json'
+      - 'data/daybook-golden.json'
       - 'src/prompt_regression/**'
+      - 'README.md'
       - '.github/workflows/evaluate.yml'
 
 jobs:
@@ -16,11 +16,5 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Run deterministic evaluation
-        run: PYTHONPATH=src python -m prompt_regression --dataset data/golden.json --prompt-version v1 --save-baseline
-      - name: Upload HTML report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: prompt-evaluation-report
-          path: reports/*.html
+      - name: Validate Daybook golden set
+        run: PYTHONPATH=src python -m prompt_regression --validate-only

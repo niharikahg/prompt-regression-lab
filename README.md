@@ -1,42 +1,48 @@
 # Prompt Regression Lab
 
-Prompt Regression Lab checks whether a prompt change improves or breaks a structured LLM feature before it ships. It runs a versioned golden dataset, scores category accuracy, compares each case with a saved baseline, and writes a self-contained HTML report.
+Prompt Regression Lab evaluates the real **Ask My Journal** endpoint from [Daybook AI Journal](https://github.com/niharikahg/daybook-ai-journal). It sends synthetic questions and synthetic journal entries to a running Daybook instance, then checks which entry dates the feature retrieved, whether it abstained when the answer was absent, and how long the request took.
 
-This first slice is deliberately provider-free: the included deterministic classifier makes the evaluation workflow reproducible and costs nothing. Replace `classify()` in `src/prompt_regression/runner.py` with a provider adapter when ready; keep evaluation and reporting independent of the model.
+## What this version covers
 
-## Run locally
+- The Daybook endpoint contract: `POST /api/ask` with `{ "question": string, "entries": Entry[] }` and `{ "answer": string, "dates": string[] }` response fields.
+- Eight synthetic golden cases for relevant-entry retrieval, multiple relevant entries, summary/topic retrieval, and abstention.
+- Exact case accuracy, date precision/recall/F1, abstention accuracy, mean latency, and p95 latency.
+- Case-by-case HTML reports and optional baseline comparisons.
+- Pull request validation of the golden-set schema.
 
-Requires Python 3.11+ and no third-party packages.
+The test cases contain fabricated journal content only. They do not read or send your personal Daybook entries. If the Daybook server has `OPENAI_API_KEY` configured, its normal answer route will send these synthetic questions and entries to OpenAI. To evaluate the local deterministic fallback, run Daybook without that key.
+
+## Run against Daybook locally
+
+Requires Python 3.11+ and no third-party Python packages. Start Daybook in another terminal so its API is available at `http://localhost:3000/api/ask`:
 
 ```sh
-PYTHONPATH=src python -m prompt_regression --dataset data/golden.json --prompt-version v1 --save-baseline
-PYTHONPATH=src python -m prompt_regression --dataset data/golden.json --prompt-version v2
+pnpm dev
 ```
 
-Reports are written to `reports/`. The first command saves a baseline to `data/baseline.json`; the second compares against it and exits with status 1 if regressions exceed the configured threshold.
+Then, from this repository root:
 
-## What it measures
+```sh
+PYTHONPATH=src python3 -m prompt_regression --validate-only
+PYTHONPATH=src python3 -m prompt_regression --save-baseline
+PYTHONPATH=src python3 -m prompt_regression
+```
 
-- Exact category accuracy and per-category accuracy
-- Case-level regressions and improvements against a baseline
-- A configurable warning/critical accuracy drop threshold
-- A portable HTML report with run metadata and output diffs
+Set `DAYBOOK_ASK_URL` or pass `--endpoint` to point at a different running Daybook instance. `--save-baseline` writes `data/daybook-baseline.json` only when every golden case passes; later runs compare against it. Review and commit that baseline when you want it to become the comparison point for the project. HTML reports are written to `reports/`.
 
-## Layout
+If the endpoint is unavailable or returns an invalid payload, affected cases fail and the report records the error. The baseline should only be saved from a successful run.
+
+## Evaluation limits
+
+This first integration checks retrieval evidence and abstention behavior. It does not judge whether a generated answer is semantically complete or factually correct beyond its cited dates. Token usage is not returned by Daybook's current API. The GitHub Action currently validates dataset structure only; running model evaluations in CI needs a reachable Daybook endpoint and a deliberate cross-repository setup.
+
+## Project layout
 
 ```text
-data/golden.json                 Human-reviewed examples and expected labels
-src/prompt_regression/runner.py  Inference adapter and evaluation logic
-src/prompt_regression/report.py  HTML report generation
-.github/workflows/evaluate.yml   Pull request evaluation workflow
+data/daybook-golden.json          Synthetic questions, journal entries, and expected evidence
+src/prompt_regression/runner.py   HTTP client, dataset validation, scoring, baseline comparison
+src/prompt_regression/report.py   Dependency-free HTML report
+.github/workflows/evaluate.yml    Golden-set schema validation on pull requests
 ```
 
-## Next steps
-
-1. Expand the hand-labeled dataset to cover ambiguous, malformed, and multilingual inputs.
-2. Add a provider interface and structured-output validation.
-3. Persist run metadata and scores in SQLite for trend queries.
-4. Add confidence intervals and a clearer distinction between statistical signal and a configurable policy threshold.
-5. Add a PR summary and optional notification integration.
-
-Dataset examples are synthetic and contain no personal information. Never commit real customer messages or API keys.
+Never add real journal entries, API keys, or other personal data to this repository.

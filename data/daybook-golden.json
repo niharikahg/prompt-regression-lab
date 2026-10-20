@@ -1,0 +1,72 @@
+[
+  {
+    "id": "retrieval-project-decision",
+    "question": "What did I decide about the database project?",
+    "entries": [
+      {"date":"2026-09-22","text":"I decided to use PostgreSQL for the database systems project and prototype hybrid search.","summary":"Choose PostgreSQL and prototype hybrid search for the database project.","topics":["database","school"]},
+      {"date":"2026-09-19","text":"I went for a walk after class and called my sister.","summary":"A quiet evening after class.","topics":["personal"]}
+    ],
+    "expected": {"dates":["2026-09-22"],"abstain":false}
+  },
+  {
+    "id": "retrieval-multiple-learning-entries",
+    "question": "What did I learn about Redis?",
+    "entries": [
+      {"date":"2026-09-25","text":"I learned that Redis can act as a fast in-memory cache, but cache invalidation needs a clear policy.","summary":"Redis is useful for caching; define invalidation carefully.","topics":["Redis","systems"]},
+      {"date":"2026-09-27","text":"In lab I compared Redis persistence options and tested snapshots versus append-only files.","summary":"Compared Redis snapshots and append-only persistence.","topics":["Redis","database"]},
+      {"date":"2026-09-28","text":"I cooked pasta and prepared lunch for tomorrow.","summary":"Meal prep.","topics":["home"]}
+    ],
+    "expected": {"dates":["2026-09-25","2026-09-27"],"abstain":false}
+  },
+  {
+    "id": "retrieval-summary-and-topics",
+    "question": "Which grocery store did I mention?",
+    "entries": [
+      {"date":"2026-10-01","text":"I picked up groceries at the grocery store on the way home.","summary":"Bought fruit and oat milk at Trader Joe's.","topics":["groceries","Trader Joe's"]},
+      {"date":"2026-10-02","text":"I reviewed lecture notes.","summary":"Prepared for class.","topics":["school"]}
+    ],
+    "expected": {"dates":["2026-10-01"],"abstain":false}
+  },
+  {
+    "id": "abstain-no-matching-entry",
+    "question": "When is my dentist appointment?",
+    "entries": [
+      {"date":"2026-10-03","text":"I finished the database assignment and submitted it.","summary":"Submitted the database assignment.","topics":["school"]},
+      {"date":"2026-10-04","text":"I watered the plants and cleaned the kitchen.","summary":"House chores.","topics":["home"]}
+    ],
+    "expected": {"dates":[],"abstain":true}
+  },
+  {
+    "id": "abstain-no-entries",
+    "question": "What time is my dentist appointment?",
+    "entries": [],
+    "expected": {"dates":[],"abstain":true}
+  },
+  {
+    "id": "retrieve-workout-plan",
+    "question": "What was my workout plan?",
+    "entries": [
+      {"date":"2026-10-05","text":"I planned a short run on Tuesday and strength training on Thursday.","summary":"Run Tuesday; strength training Thursday.","topics":["workout","health"]},
+      {"date":"2026-10-06","text":"I finished a reading assignment.","summary":"Completed reading.","topics":["school"]}
+    ],
+    "expected": {"dates":["2026-10-05"],"abstain":false}
+  },
+  {
+    "id": "retrieve-deadline",
+    "question": "What is the deadline for the systems paper?",
+    "entries": [
+      {"date":"2026-10-07","text":"The systems paper is due October 28. I should finish the outline this weekend.","summary":"Systems paper due October 28.","topics":["deadline","school"]},
+      {"date":"2026-10-08","text":"I need to buy printer paper.","summary":"Office supplies.","topics":["errands"]}
+    ],
+    "expected": {"dates":["2026-10-07"],"abstain":false}
+  },
+  {
+    "id": "retrieve-feeling-about-interview",
+    "question": "How did I feel after the interview?",
+    "entries": [
+      {"date":"2026-10-09","text":"After the interview I felt relieved and more confident. The technical round was challenging but fair.","summary":"Felt relieved and more confident after a challenging interview.","topics":["interview","career"]},
+      {"date":"2026-10-10","text":"I watched a movie with friends.","summary":"Movie night.","topics":["friends"]}
+    ],
+    "expected": {"dates":["2026-10-09"],"abstain":false}
+  }
+]
