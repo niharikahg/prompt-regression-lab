@@ -1,48 +1,55 @@
 # Prompt Regression Lab
 
-Prompt Regression Lab evaluates the real **Ask My Journal** endpoint from [Daybook AI Journal](https://github.com/niharikahg/daybook-ai-journal). It sends synthetic questions and synthetic journal entries to a running Daybook instance, then checks which entry dates the feature retrieved, whether it abstained when the answer was absent, and how long the request took.
+A CI-oriented evaluation project for a customer support email classifier. The classifier maps each email to `billing`, `technical`, `account`, or `general` and returns a one-sentence summary. Prompts are versioned YAML configuration; evaluation uses a versioned, manually authored synthetic golden dataset.
 
-## What this version covers
+## Current scope
 
-- The Daybook endpoint contract: `POST /api/ask` with `{ "question": string, "entries": Entry[] }` and `{ "answer": string, "dates": string[] }` response fields.
-- Eight synthetic golden cases for relevant-entry retrieval, multiple relevant entries, summary/topic retrieval, and abstention.
-- Exact case accuracy, date precision/recall/F1, abstention accuracy, mean latency, and p95 latency.
-- Case-by-case HTML reports and optional baseline comparisons.
-- Pull request validation of the golden-set schema.
+- `src/prompt_regression/classifier.py`: typed Pydantic `PromptConfig` and `Classification` contracts plus an OpenAI structured-output classifier.
+- `prompts/v1.yaml`: versioned prompt with metadata and few-shot examples.
+- `data/email-golden-v1.json`: 51 synthetic cases with expected category, reference summary, difficulty, and notes. Includes short, ambiguous, typo-containing, sarcastic, and Spanish-language cases. Labels are manually authored rather than model-generated; please review them before describing them as human-verified ground truth.
+- `src/prompt_regression/runner.py`: schema validation, model evaluation, category accuracy, summary token-F1, regression comparison, and HTML reporting.
+- `.github/workflows/evaluate.yml`: validates the prompt and dataset on pull requests without requiring API credentials.
 
-The test cases contain fabricated journal content only. They do not read or send your personal Daybook entries. If the Daybook server has `OPENAI_API_KEY` configured, its normal answer route will send these synthetic questions and entries to OpenAI. To evaluate the local deterministic fallback, run Daybook without that key.
+The examples are synthetic and must not be replaced with real customer emails or personal data.
 
-## Run against Daybook locally
+## Setup
 
-Requires Python 3.11+ and no third-party Python packages. Start Daybook in another terminal so its API is available at `http://localhost:3000/api/ask`:
-
-```sh
-pnpm dev
-```
-
-Then, from this repository root:
+Requires Python 3.11+ and an OpenAI API key for live evaluation.
 
 ```sh
-PYTHONPATH=src python3 -m prompt_regression --validate-only
-PYTHONPATH=src python3 -m prompt_regression --save-baseline
-PYTHONPATH=src python3 -m prompt_regression
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e .
 ```
 
-Set `DAYBOOK_ASK_URL` or pass `--endpoint` to point at a different running Daybook instance. `--save-baseline` writes `data/daybook-baseline.json` only when every golden case passes; later runs compare against it. Review and commit that baseline when you want it to become the comparison point for the project. HTML reports are written to `reports/`.
+Validate configuration without making a model call:
 
-If the endpoint is unavailable or returns an invalid payload, affected cases fail and the report records the error. The baseline should only be saved from a successful run.
+```sh
+PYTHONPATH=src python -m prompt_regression --validate-only
+```
 
-## Evaluation limits
+Run the model evaluation:
 
-This first integration checks retrieval evidence and abstention behavior. It does not judge whether a generated answer is semantically complete or factually correct beyond its cited dates. Token usage is not returned by Daybook's current API. The GitHub Action currently validates dataset structure only; running model evaluations in CI needs a reachable Daybook endpoint and a deliberate cross-repository setup.
+```sh
+export OPENAI_API_KEY="your-key"
+PYTHONPATH=src python -m prompt_regression
+```
+
+Select another prompt/model/dataset with `--prompt`, `--model`, and `--dataset`. The default report is written to `reports/email-evaluation.html` (reports are ignored by git).
+
+## Scoring and regression checks
+
+Category accuracy is exact. Summary comparison uses token-level F1 as a lightweight signal; it is not a semantic or factuality judge. A case passes when its category is correct and summary token-F1 is at least 0.25. Tune this threshold and the examples based on reviewed failure cases before relying on it as a release gate. Optional `--baseline PATH` fails if the exact pass rate is below the saved baseline. The baseline format is the JSON evaluation result; create one by saving/copying a reviewed run result intentionally.
+
+The pull request workflow currently validates schema only. Running paid model calls in GitHub Actions requires configuring a secret and deciding whether each PR should make live calls; that is not enabled by default.
 
 ## Project layout
 
 ```text
-data/daybook-golden.json          Synthetic questions, journal entries, and expected evidence
-src/prompt_regression/runner.py   HTTP client, dataset validation, scoring, baseline comparison
-src/prompt_regression/report.py   Dependency-free HTML report
-.github/workflows/evaluate.yml    Golden-set schema validation on pull requests
+prompts/v1.yaml                          Versioned prompt configuration
+data/email-golden-v1.json               Versioned synthetic golden dataset
+src/prompt_regression/classifier.py      Typed interface and model call
+src/prompt_regression/runner.py           Validation, evaluation, and regression check
+src/prompt_regression/report.py           Standalone HTML report
+.github/workflows/evaluate.yml            Pull request configuration validation
 ```
-
-Never add real journal entries, API keys, or other personal data to this repository.
